@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -10,29 +11,26 @@ from torch.nn.utils import parameters_to_vector
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
-
-Num_of_clients = 3
-
-def data_distribution():
+def data_distribution(num_of_clients):
     
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
     
+    # transform = transforms.Compose([transforms.ToTensor()])
+    # trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
+
+
     # Assuming labels is a list of labels for your dataset
     labels = [i for i in range(10)]
 
-    # Number of clients
-    num_clients = 3
-
     # Create a dictionary to hold the data for each client
-    client_data = {i: [] for i in range(num_clients)}
+    client_data = {i: [] for i in range(num_of_clients)}
 
     # For each label in the dataset
     for label in labels:
         # Generate a sample from a Dirichlet distribution
-        dirichlet_sample = np.random.dirichlet(np.ones(num_clients)*0.5)
+        dirichlet_sample = np.random.dirichlet(np.ones(num_of_clients)*0.6)
 
-        # Get the indices of the instances in the dataset that have this label
         indices = np.where(np.array(trainset.targets) == label)[0]
 
         # Shuffle the indices
@@ -47,4 +45,57 @@ def data_distribution():
     # Convert the client data to PyTorch datasets
     client_datasets = {i: torch.utils.data.Subset(trainset, indices) for i, indices in client_data.items()}
     
+    sum = 0
+    for i in range(len(client_datasets)):
+        sum +=len(client_datasets[i]) 
+        print(i, len(client_datasets[i]))
+
+    print(sum)
+
+     # Save each client's dataset to a file
+    os.makedirs('./datasets', exist_ok=True)
+    for i, dataset in client_datasets.items():
+        torch.save(dataset, f'./datasets/client_{i}_dataset.pt')
+
     return client_datasets
+
+# def data_distribution(num_of_clients):
+    
+#     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+#     trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
+    
+#     labels = [i for i in range(10)]
+
+#     client_data = {i: [] for i in range(num_of_clients)}
+
+#     for label in labels:
+#         indices = np.where(np.array(trainset.targets) == label)[0]
+#         np.random.shuffle(indices)
+
+#         while len(indices) > 0:
+#             dirichlet_sample = np.random.dirichlet(np.ones(num_of_clients)*0.5)
+#             for i, proportion in enumerate(dirichlet_sample):
+#                 num_samples = int(proportion * len(indices))
+#                 print(num_samples)
+#                 if num_samples == 0:
+#                     break
+#                 client_data[i].extend(indices[:num_samples])
+#                 indices = indices[num_samples:]
+#             if num_samples == 0:
+#                 break
+
+#     client_datasets = {i: torch.utils.data.Subset(trainset, indices) for i, indices in client_data.items()}
+    
+#     sum = 0
+#     for i in range(len(client_datasets)):
+#         sum +=len(client_datasets[i]) 
+#         print(i, len(client_datasets[i]))
+
+#     print(sum)
+
+#     # Save each client's dataset to a file
+#     os.makedirs('./datasets', exist_ok=True)
+#     for i, dataset in client_datasets.items():
+#         torch.save(dataset, f'./datasets/client_{i}_dataset.pt')
+
+#     return client_datasets

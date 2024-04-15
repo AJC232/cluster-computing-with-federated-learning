@@ -18,6 +18,24 @@ class Communication:
         self.client.connect((self.host, self.port))
         print(f"Connected to server at {self.host}:{self.port}")
 
+    def send_dataset(self, dataset, conn):
+        data = pickle.dumps(dataset)
+        conn.sendall(data + b"<END_OF_TRANSMISSION>")
+    
+    def receive_dataset(self, conn):
+        data = b""
+        print("Receiving dataset...")
+        while True:
+            packet = conn.recv(1024)
+            data += packet
+            if b"<END_OF_TRANSMISSION>" in data:
+                break
+
+        data = data.rstrip(b"<END_OF_TRANSMISSION>")
+        dataset = pickle.loads(data)
+        return dataset
+        
+
     def send_model(self, model, conn):
         data = pickle.dumps(model.state_dict())
         conn.sendall(data + b"<END_OF_TRANSMISSION>")

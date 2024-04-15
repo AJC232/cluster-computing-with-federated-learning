@@ -9,12 +9,13 @@ class Loss(nn.Module):
         super(Loss, self).__init__()
         self.supervisedLoss = nn.CrossEntropyLoss()
         
-    def forward(self, z, labels, zglob, zprev, tau, mue):
-        supervised_loss = self.supervisedLoss(z, labels)
+    def forward(self, Fw, labels, z, zglob, zprev, tau, mue):
+        supervised_loss = self.supervisedLoss(Fw, labels)
         
         numerator = torch.exp(F.cosine_similarity(z, zglob) / tau)
         denominator = torch.exp(F.cosine_similarity(z, zglob) / tau) + torch.exp(F.cosine_similarity(z, zprev) / tau)
-        contrastive_loss = -torch.log(numerator / denominator).mean()
+        contrastive_loss = -torch.log(numerator / denominator)
         
         loss = supervised_loss + mue * contrastive_loss
-        return loss
+        return loss.mean()
+    
