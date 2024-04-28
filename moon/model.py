@@ -10,17 +10,15 @@ class BaseEncoder(nn.Module):
     def __init__(self):
         super(BaseEncoder, self).__init__()
         self.conv1 = nn.Conv2d(3, 6, 5)
-        self.conv2 = nn.Conv2d(6, 16, 5)
         self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(6, 16, 5)
         self.fc1 = nn.Linear(16 * 5 * 5, 120)
         self.fc2 = nn.Linear(120, 84)
 
 
     def forward(self, x):
-        # x = self.pool(F.relu(self.conv1(x)))
-        # x = self.pool(F.relu(self.conv2(x)))
-        x = self.pool(self.conv1(x))
-        x = self.pool(self.conv2(x))
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
         x = x.view(-1, 16 * 5 * 5)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
@@ -34,7 +32,7 @@ class ProjectionHead(nn.Module):
 
     def forward(self, x):
         x = F.relu(self.fc1(x))  # Apply ReLU activation function after first layer
-        x = self.fc2(x)  # Output from second layer
+        x = F.relu(self.fc2(x))
         return x
     
 class OutputLayer(nn.Module):
@@ -43,8 +41,8 @@ class OutputLayer(nn.Module):
         self.fc = nn.Linear(256, 10)  # Fully connected layer
 
     def forward(self, x):
-        x = self.fc(x)  # Apply fully connected layer
-        return F.log_softmax(x, dim=1)  # Apply log softmax to get predicted probabilities for each class
+        x = F.log_softmax(self.fc(x), dim=1)  # Apply fully connected layer
+        return x  
 
 
 class MOON(nn.Module):
